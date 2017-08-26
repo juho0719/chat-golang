@@ -3,6 +3,8 @@ package main
 import (
 	"net/http"
 	"log"
+	"github.com/gorilla/websocket"
+	"chat-golang/trace"
 )
 
 type room struct {
@@ -15,6 +17,8 @@ type room struct {
 	leave chan *client
 	// clients는 현재 채팅방에 있는 모든 클라이언트
 	clients map[*client]bool
+	// tracer는 방 안에서 활동의 추적 정보를 수신
+	tracer trace.Tracer
 }
 
 func (r *room) run() {
@@ -23,14 +27,18 @@ func (r *room) run() {
 		case client := <-r.join:
 			//입장
 			r.clients[client] = true
+			r.tracer.Trace("New client joined")
 		case client := <-r.leave:
 			//퇴장
 			delete(r.clients, client)
 			close(client.send)
+			r.tracer.Trace("Client left")
 		case msg := <-r.forward:
+			r.tracer.Trace("Message receive: ", string(msg))
 			// 모든 클라이언트에게 메시지 전달
 			for client := range r.clients {
 				client.send <- msg
+				r.tracer.Trace(" -- sent to client")
 			}
 		}
 	}

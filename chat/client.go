@@ -2,7 +2,6 @@ package main
 
 import (
 	"github.com/gorilla/websocket"
-	"syscall"
 )
 
 // client는 한명의 채팅 사용자
