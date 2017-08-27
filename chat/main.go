@@ -9,6 +9,11 @@ import (
 	"flag"
 	"chat-golang/trace"
 	"os"
+	"github.com/stretchr/gomniauth"
+	"github.com/stretchr/gomniauth/providers/facebook"
+	"github.com/stretchr/gomniauth/providers/github"
+	"github.com/stretchr/gomniauth/providers/google"
+	"github.com/stretchr/objx"
 )
 
 // templ은 하나의 템플릿
@@ -23,7 +28,13 @@ func (t *templateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	t.once.Do(func() {
 		t.templ = template.Must(template.ParseFiles(filepath.Join("templates", t.filename)))
 	})
-	t.templ.Execute(w, r)
+	data := map[string]interface{}{
+		"Host": r.Host,
+	}
+	if authCookie, err := r.Cookie("auth"); err == nil {
+		data["UserData"] = objx.MustFromBase64(authCookie.Value)
+	}
+	t.templ.Execute(w, data)
 }
 
 func newRoom() *room {
@@ -38,9 +49,20 @@ func newRoom() *room {
 func main() {
 	var addr = flag.String("addr", ":8081", "The addr of the application.")
 	flag.Parse()	// 플래그 파싱
+	//gomniauth 설정
+	gomniauth.SetSecurityKey("PUT YOUR AUTH KEY HERE")
+	gomniauth.WithProviders(
+		facebook.New("key", "secret", "http://localhost:8081/auth/callback/facebook"),
+		github.New("key", "secret", "http://localhost:8081/auth/callback/github"),
+		google.New("key", "secret", "http://localhost:8081/auth/callback/google"),
+	)
+
 	r := newRoom()
 	r.tracer = trace.New(os.Stdout)
-	http.Handle("/", &templateHandler{filename: "chat.html"})
+	http.Handle("/assets/", http.StripPrefix("/assets", http.FileServer(http.Dir("/chat-golang/chat/assets/"))))
+	http.Handle("/chat", MustAuth(&templateHandler{filename: "chat.html"}))
+	http.Handle("/login", &templateHandler{filename: "login.html"})
+	http.HandleFunc("/auth/", loginHandler)
 	http.Handle("/room", r)
 	// 방을 가져옴
 	go r.run()
