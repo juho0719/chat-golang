@@ -3,7 +3,6 @@ package main
 import (
 	"github.com/gorilla/websocket"
 	"time"
-	"github.com/stretchr/codecs/msgpack"
 )
 
 // client는 한명의 채팅 사용자
@@ -27,6 +26,9 @@ func (c *client) read() {
 		}
 		msg.When = time.Now()
 		msg.Name = c.userData["name"].(string)
+		if avatarURL, ok := c.userData["avatar_url"]; ok {
+			msg.AvatarURL = avatarURL.(string)
+		}
 		c.room.forward <- msg
 	}
 }
