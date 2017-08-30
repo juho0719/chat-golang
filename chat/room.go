@@ -20,6 +20,8 @@ type room struct {
 	clients map[*client]bool
 	// tracer는 방 안에서 활동의 추적 정보를 수신
 	tracer trace.Tracer
+	// avatar는 아바타 정보를 얻는 방법이다
+	avatar Avatar
 }
 
 func (r *room) run() {

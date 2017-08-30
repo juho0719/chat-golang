@@ -37,13 +37,14 @@ func (t *templateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	t.templ.Execute(w, data)
 }
 
-func newRoom() *room {
+func newRoom(UseAuthAvatar) *room {
 	return &room{
 		forward: make(chan *message),
 		join: make(chan *client),
 		leave: make(chan *client),
 		clients: make(map[*client]bool),
 		tracer: trace.Off(),
+		avatar: avatar,
 	}
 }
 func main() {
